@@ -1,0 +1,97 @@
+#==============================================================================
+#
+# 『モーションビューワ』スクリプトファイル [motion.txt]
+# Author : TAKANO KEISUKE
+#
+#==============================================================================
+SCRIPT			# この行は絶対消さないこと！
+
+#------------------------------------------------------------------------------
+# モデル数
+#------------------------------------------------------------------------------
+NUM_MODEL = 9
+
+#------------------------------------------------------------------------------
+# モデルファイル名
+#------------------------------------------------------------------------------
+MODEL_FILENAME = data/model/player/Player_Body.x				# [0]体
+MODEL_FILENAME = data/model/player/Player_RightArm.x			# [1]右腕
+MODEL_FILENAME = data/model/player/Player_RightHand.x			# [2]右手
+MODEL_FILENAME = data/model/player/Player_LeftArm.x				# [3]左腕
+MODEL_FILENAME = data/model/player/Player_LeftHand.x			# [4]左手
+MODEL_FILENAME = data/model/player/Player_RightLeg.x			# [5]右脚
+MODEL_FILENAME = data/model/player/Player_RightFoot.x			# [6]右足
+MODEL_FILENAME = data/model/player/Player_LeftLeg.x				# [7]左脚
+MODEL_FILENAME = data/model/player/Player_LeftFoot.x			# [8]左足
+#------------------------------------------------------------------------------
+# キャラクター情報
+#------------------------------------------------------------------------------
+CHARACTERSET
+	NUM_PARTS = 9					# パーツ数
+
+		PARTSSET						# [0]体
+		INDEX = 0
+		PARENT = -1					# (親)NULL
+		POS = 0.0 12.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [2]右腕
+		INDEX = 1
+		PARENT = 0					# (親)NULL
+		POS = -3.0 7.5 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [3]右手
+		INDEX = 2
+		PARENT = 1					# (親)NULL
+		POS = -15.0 0.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [4]左腕
+		INDEX = 3
+		PARENT = 0					# (親)NULL
+		POS = 3.0 7.5 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [5]左手
+		INDEX = 4
+		PARENT = 3					# (親)NULL
+		POS = 15.0 0.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [6]右脚
+		INDEX = 5
+		PARENT = 0					# (親)NULL
+		POS = -3.0 -0.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [7]右足
+		INDEX = 6
+		PARENT = 5					# (親)NULL
+		POS = -0.1 -5.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [8]左脚
+		INDEX = 7
+		PARENT = 0					# (親)NULL
+		POS = 3.0 -0.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+	PARTSSET						# [9]左足
+		INDEX = 8
+		PARENT = 7					# (親)NULL
+		POS = 0.1 -5.0 0.0
+		ROT = 0.0 0.0 0.0
+	END_PARTSSET
+	
+END_CHARACTERSET
+
+END_SCRIPT		# この行は絶対消さないこと！
