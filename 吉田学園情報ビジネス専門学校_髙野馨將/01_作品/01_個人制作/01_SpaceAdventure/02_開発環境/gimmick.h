@@ -35,6 +35,7 @@ public:
 
 	bool PushPlayer(void);								//プレイヤーの押出処理
 	bool GetLanding(void) { return m_bLanding; }		//着地しているかの取得
+	bool Collision(D3DXVECTOR3 pos);					//当たり判定
 
 	void Fall(void);																									//落下処理
 	void Respawn(const D3DXVECTOR3 pos,float effect, GIMMICK_TYPE type);												//再生成処理

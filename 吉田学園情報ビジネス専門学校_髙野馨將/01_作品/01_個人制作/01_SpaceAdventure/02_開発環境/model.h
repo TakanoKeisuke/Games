@@ -43,7 +43,7 @@ private:
 	CModel *m_pParent;							//親モデルへのポインタ
 	D3DXVECTOR3	m_pos;							//モデルの座標
 	D3DXVECTOR3	m_ShadowPos;					//影の座標
-	D3DXVECTOR3	m_Shadow;						//影の座標
+	D3DXVECTOR3	m_Shadow;						//行列変換後の影の座標
 	D3DXVECTOR3 m_rot;							//向き
 	D3DXMATRIX m_mtxShadow;						//影のマトリックス
 	D3DXMATRIX m_mtxWorld;						//ワールドマトリックス

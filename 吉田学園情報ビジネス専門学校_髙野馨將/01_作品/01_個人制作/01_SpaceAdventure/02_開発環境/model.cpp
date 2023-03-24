@@ -265,7 +265,7 @@ void CModel::Shadow(void)
 	//シャドウマトリックスの設定
 	pDevice->SetTransform(D3DTS_WORLD, &m_mtxShadow);
 	
-	//影の位置
+	//行列の影の位置を変換する
 	D3DXVec3TransformCoord(&m_Shadow, &D3DXVECTOR3(0.0f, 0.0f, 0.0f), &m_mtxShadow);
 
 	//現在のマテリアルを保持

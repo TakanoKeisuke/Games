@@ -95,7 +95,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPSTR /*lpC
 	CApplication *pApllication = new CApplication;
 
 	// 初期化処理
-	if (FAILED(pApllication->Init(hInstance,hWnd, FALSE)))
+	if (FAILED(pApllication->Init(hInstance,hWnd, TRUE)))
 	{//第2引数はFALSEだったら、フルスクリーン
 		return -1;
 	}

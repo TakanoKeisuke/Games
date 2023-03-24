@@ -32,6 +32,8 @@
 //静的メンバ変数宣言
 float CPlayer::m_fAcceleration = 1.0f;		//加速係数
 float CPlayer::m_fJump = 20.0f;				//ジャンプ力
+int CPlayer::m_nGoalCnt = 30;				//ゴールからフェード迄の時間
+
 //======================================================
 //オーバーロードされたコンストラクタ
 //======================================================
@@ -94,7 +96,7 @@ HRESULT CPlayer::Init(void)
 }
 
 //======================================================
-//更新処理
+//終了処理
 //======================================================
 void CPlayer::Uninit(void)
 {
@@ -163,16 +165,21 @@ void CPlayer::Update(void)
 		CollisionObj();
 	}
 
+	//プレイヤーの強化
+	BuffPlayer();
+
 	//ステージの当たり判定
 	CollisionStage();
 
-	//プレイヤーの強化
-	BuffPlayer();
+	//ギミックの当たり判定
+	CollisionGimmick();
 
 	//プレイヤーが一定の高さより落ちたら
 	if (GetPos().y <= -200.0f)
 	{//ダメージを受ける
 		m_pHitbox->SetEffect(CHitbox::EFFECT_DAMAGE);
+		//強化効果の破棄
+		m_nBuffTime = 0;
 		//プレイヤーの位置を戻す
 		SetPos(m_Originpos);
 	}
@@ -182,7 +189,7 @@ void CPlayer::Update(void)
 		m_nCntGoal++;
 	}
 	//ゴールカウントが120を超えたら
-	if (m_nCntGoal >= 60 && CFade::GetFade() == CFade::FADE_NONE)
+	if (m_nCntGoal >= m_nGoalCnt && CFade::GetFade() == CFade::FADE_NONE)
 	{//遷移する
 		m_nCntGoal = 0;
 		//モード設定
@@ -341,7 +348,7 @@ void CPlayer::CollisionObj(void)
 			}
 			else
 			{
-				m_move.y = m_fJump + 50.0f;
+				m_move.y = m_fJump + 20.0f;
 			}
 			//ジャンプした状態にする
 			m_bJumping = false;
@@ -446,6 +453,11 @@ void CPlayer::BuffPlayer(void)
 		m_nBuffTime--;
 		//パーティクルの生成
 		CGame::GetParticle()[0] = CParticle::Create(CParticle::PARTICLETYPE_FOUNTAIN, m_pos, 30, D3DXCOLOR(0.1f, 0.1f, 1.0f, 1.0f));
+		
+		if (m_bInside)
+		{
+			m_nBuffTime = 0;
+		}
 	}
 
 	//強化効果のリセット
@@ -489,7 +501,7 @@ void CPlayer::CollisionStage(void)
 {
 	//メッシュの情報取得
 	std::vector<CMeshField*> pMesh = CStage::GetMesh();
-	bool b = true;
+	bool bCollision = true;
 	D3DXVECTOR3 shadowPos = m_apModel[0]->GetShadowPos();
 	//メッシュフィールドの数 着地の判定をする
 	m_bCollisionField.resize(CStage::m_nMaxMesh);
@@ -498,7 +510,7 @@ void CPlayer::CollisionStage(void)
 		if (pMesh[nCnt] != nullptr)
 		{
 			//メッシュの当たり判定
-			m_bCollisionField[nCnt] = pMesh[nCnt]->Collision(&m_pos, (m_size.y / 2.0f));
+			m_bCollisionField[nCnt] = pMesh[nCnt]->Collision(&m_pos, (m_size.y / 2.0f),true);
 		}
 		//着地しているときはジャンプできる
 		if (m_bCollisionField[nCnt])
@@ -510,9 +522,9 @@ void CPlayer::CollisionStage(void)
 			{//モデルの影
 				m_apModel[nCntModel]->SetShadowPos(D3DXVECTOR3(m_pos.x, m_pos.y + 0.2f, m_pos.z));
 
-				b = pMesh[nCnt]->ShadowCollision(&D3DXVECTOR3(shadowPos.x, m_pos.y, shadowPos.z), 0.0f);
+				bCollision = pMesh[nCnt]->Collision(&D3DXVECTOR3(shadowPos.x, m_pos.y, shadowPos.z), 0.0f,false);
 
-				if (!b)
+				if (!bCollision)
 				{
 					m_bShadow = false;
 				}
@@ -529,21 +541,23 @@ void CPlayer::CollisionStage(void)
 			m_fFriction = 0.45f;
 			m_bJumping = false;
 
-			//b = pMesh[nCnt]->ShadowCollision(&D3DXVECTOR3(shadowPos.x, 0.0f, shadowPos.z), 0.0f);
+			for (int nCntModel = 0; nCntModel < MAX_MODEL; nCntModel++)
+			{
+				//メッシュフィールドに触れていないときの影の位置の設定
+				bCollision = pMesh[nCnt]->Collision(&D3DXVECTOR3(shadowPos.x, pMesh[nCnt]->GetPos().y, shadowPos.z), 0.0f,false);
 
-			//if (!b)
-			//{
-			//	m_bShadow = false;
-			//}
-			//else
-			//{
-			//	m_bShadow = true;
-			//}
+				if (!bCollision)
+				{
+					m_bShadow = false;
+				}
+				else
+				{
+					m_bShadow = true;
+					return;
+				}
+			}
 		}
 	}
-
-
-
 
 	//惑星の情報取得
 	std::vector<CPlanet*> pPlanet = CStage::GetPlanet();	//それぞれの惑星の情報
@@ -803,18 +817,17 @@ void CPlayer::Input(void)
 			std::vector<CGimmick*> pGimmick = CStage::GetGimmick();
 			std::vector<bool> bGimmick;
 			bGimmick.resize(CStage::m_nMaxGimmick);
+
 			for (nCnt = 0; nCnt < CStage::m_nMaxGimmick; nCnt++)
 			{
 				if (pGimmick[nCnt] != nullptr)
 				{
+					//ブロックの上に着地しているかどうか
 					bGimmick[nCnt] = pGimmick[nCnt]->GetLanding();
+
 					//着地しているときはジャンプできる
 					if (bGimmick[nCnt])
 					{
-						for (int nCntModel = 0; nCntModel < MAX_MODEL; nCntModel++)
-						{//モデルの影
-							m_apModel[nCntModel]->SetShadowPos(D3DXVECTOR3(m_pos.x, m_pos.y + 0.2f, m_pos.z));
-						}
 						m_move.y = 0.0f;
 						m_pos.y = pGimmick[nCnt]->GetPos().y + (pGimmick[nCnt]->GetSize().y / 2.0f);
 						m_bJumping = true;
@@ -849,26 +862,6 @@ void CPlayer::Input(void)
 		m_bJumping = false;
 	}
 
-	////クールタイムがなければ攻撃
-	//if (CInputKeyboard::GetKeyboardTrigger(DIK_V) && m_fCT <= 0.0f && m_pAttackHitbox == nullptr)
-	//{
-	//	//攻撃
-	//	Attack();
-	//}
-
-	//if (m_fCT > 0)
-	//{//攻撃中だったら
-	//	//クールタイムの減少
-	//	m_fCT--;
-	//}
-
-	//if (m_fCT <= 0.0f && m_pAttackHitbox != nullptr)
-	//{//カウンターが0以下になったら
-	//	m_pAttackHitbox->Release();			//ヒットボックスを破棄する
-	//	m_pAttackHitbox = nullptr;			//ポインタをnullにする
-	//	m_fCT = 0;							//カウンターを0に戻す
-	//}
-
 	//前回位置を保存
 	m_posOld = m_pos;
 
@@ -878,12 +871,13 @@ void CPlayer::Input(void)
 	//移動量の減衰
 	m_move.x += (0.0f - m_move.x) * m_fFriction;
 	m_move.z += (0.0f - m_move.z) * m_fFriction;
+
 	if (m_bInside)
 	{
 		m_move.y += (0.0f - m_move.y) * m_fFriction;
 	}
 	else
-	{
+	{//惑星の外なら
 		if (m_move.y < 0.0f)
 		{
 			m_move.y += (0.0f - m_move.y) * 0.1f * m_fSlowFall;
@@ -904,7 +898,52 @@ void CPlayer::Input(void)
 	CDebugProc::Print("クォータニオン %f %f %f %f\n", m_quat.x, m_quat.y, m_quat.z, m_quat.w);
 	CDebugProc::Print("軸ベクトル %f %f %f \n", m_vecAxis.x, m_vecAxis.y, m_vecAxis.z);
 	CDebugProc::Print("強化効果の時間 %d \n", m_nBuffTime);
+	if (m_bShadow)
+	{
+		CDebugProc::Print("影が出ている\n");
+	}
+	if (m_bJumping)
+	{
+		CDebugProc::Print("ジャンプ出来る\n");
+	}
 #endif // _DEBUG
+}
+//======================================================
+//影とギミックの当たり判定
+//======================================================
+void CPlayer::CollisionGimmick(void)
+{
+	//ギミックの範囲に影の座標があるならギミックの上に影を出す
+	for (int nCnt = 0; nCnt < CStage::m_nMaxGimmick; nCnt++)
+	{
+		if (!m_bJumping)
+		{//ジャンプしていなければ、乗っているか判定する
+			std::vector<CGimmick*> pGimmick = CStage::GetGimmick();
+			std::vector<bool> bGimmick;
+			bGimmick.resize(CStage::m_nMaxGimmick);
+			//影の座標の取得
+			D3DXVECTOR3 shadowPos = m_apModel[0]->GetShadowPos();
+
+			for (nCnt = 0; nCnt < CStage::m_nMaxGimmick; nCnt++)
+			{
+				if (pGimmick[nCnt] != nullptr)
+				{
+					//ギミックの範囲に影の座標があるか
+					if (!m_bShadow)
+					{//影が消えているなら判定する
+						m_bShadow = pGimmick[nCnt]->Collision(shadowPos);
+						if (m_bShadow)
+						{
+							for (int nCntModel = 0; nCntModel < MAX_MODEL; nCntModel++)
+							{//モデルの影
+								m_apModel[nCntModel]->SetShadowPos(D3DXVECTOR3(m_pos.x, pGimmick[nCnt]->GetPos().y + (pGimmick[nCnt]->GetSize().y / 2.0f) + 0.2f, m_pos.z));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 //======================================================

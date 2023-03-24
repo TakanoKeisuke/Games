@@ -8,6 +8,8 @@
 #include "CylinderHitbox.h"
 #include "application.h"
 #include "sound.h"
+#include "score.h"
+#include "game.h"
 
 //======================================================
 //コンストラクタ
@@ -71,6 +73,10 @@ void CGoal::Update(void)
 	{//当たり判定がnullではなかったら
 		if (m_pHitbox->GetCollisionState())
 		{//プレイヤーと当たった場合
+		 //スコアの加算
+			CScore *pScore = CGame::GetScore();
+			pScore->AddScore(10000);
+
 			 //SE
 			CApplication::GetSound()->Play(CSound::SOUND_LABEL_SE_SECRET_GET);
 

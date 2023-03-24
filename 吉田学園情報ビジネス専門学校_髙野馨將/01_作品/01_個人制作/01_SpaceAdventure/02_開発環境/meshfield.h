@@ -28,20 +28,20 @@ public:
 	~CMeshField() override;										//デストラクタ
 
 	//メンバ関数
-	virtual HRESULT Init(void) override; //初期化
-	virtual void Uninit(void) override; //終了
-	virtual void Update(void) override; //更新
-	virtual void Draw(void) override; //描画
+	virtual HRESULT Init(void) override;	//初期化
+	virtual void Uninit(void) override;		//終了
+	virtual void Update(void) override;		//更新
+	virtual void Draw(void) override;		//描画
 	
 	const D3DXVECTOR3 GetPos(void) { return m_pos; }					//posの取得
 	const D3DXVECTOR3 GetSize(void) { return m_size; }					//sizeの取得
+	const D3DXVECTOR2 GetBlock(void) { return m_block; }				//block数の取得
 	void LoadTexture(const char *aFileName);							//テクスチャの設定
 	void SetPos(const D3DXVECTOR3 pos) { m_pos = pos; }					//posの設定
 	void SetSize(const D3DXVECTOR3 &size) { m_size = size; }			//サイズの設定
 	void Normal(void);													//法線の計算
 
-	bool CMeshField::Collision(D3DXVECTOR3 *pos, float fRadius);		//当たり判定
-	bool CMeshField::ShadowCollision(D3DXVECTOR3 *pos, float fRadius);		//当たり判定
+	bool CMeshField::Collision(D3DXVECTOR3 *pos, float fRadius, bool bPush);		//当たり判定
 	float GetFriction(void) { return m_fFriction; }						//摩擦係数の取得
 	//静的メンバ関数
 	static CMeshField *Create(const D3DXVECTOR3 &pos, const D3DXVECTOR3 &size, const D3DXVECTOR3 &rot, const D3DXVECTOR2 &block, MESH_TYPE type, int nPriority); //生成

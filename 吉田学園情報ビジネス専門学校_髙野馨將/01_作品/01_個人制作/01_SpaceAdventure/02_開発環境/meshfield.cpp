@@ -320,7 +320,7 @@ void CMeshField::Normal()
 //======================================================
 //当たり判定
 //======================================================
-bool CMeshField::Collision(D3DXVECTOR3 *pos, float fRadius)
+bool CMeshField::Collision(D3DXVECTOR3 *pos, float fRadius,bool bPush)
 {
 	// 当たり判定
 	bool bCollison = false;
@@ -419,17 +419,20 @@ bool CMeshField::Collision(D3DXVECTOR3 *pos, float fRadius)
 
 			if (fIntersection >= posTarget.y && fIntersection <= posTarget.y + fRadius)
 			{// 位置の設定
-				pos->y = fIntersection;
+				if (bPush)
+				{
+					pos->y = fIntersection;
+				}
 
 				// 判定の設定
 				bCollison = true;
 
 #ifdef _DEBUG
 				//デバック表示
-				CDebugProc::Print("内にいるポリゴン : %d\n", nCntPolygon);
+				/*CDebugProc::Print("内にいるポリゴン : %d\n", nCntPolygon);
 				CDebugProc::Print("頂点%dの法線 | X : %.3f | Y : %.3f | Z : %.3f |\n", nCntPolygon, pVtx[pIdx[nCntPolygon]].nor.x, pVtx[pIdx[nCntPolygon]].nor.y, pVtx[pIdx[nCntPolygon]].nor.z);
 				CDebugProc::Print("頂点%dの法線 | X : %.3f | Y : %.3f | Z : %.3f |\n", nCntPolygon + 1, pVtx[pIdx[nCntPolygon + 1]].nor.x, pVtx[pIdx[nCntPolygon + 1]].nor.y, pVtx[pIdx[nCntPolygon + 1]].nor.z);
-				CDebugProc::Print("頂点%dの法線 | X : %.3f | Y : %.3f | Z : %.3f |\n", nCntPolygon + 2, pVtx[pIdx[nCntPolygon + 2]].nor.x, pVtx[pIdx[nCntPolygon + 2]].nor.y, pVtx[pIdx[nCntPolygon + 2]].nor.z);
+				CDebugProc::Print("頂点%dの法線 | X : %.3f | Y : %.3f | Z : %.3f |\n", nCntPolygon + 2, pVtx[pIdx[nCntPolygon + 2]].nor.x, pVtx[pIdx[nCntPolygon + 2]].nor.y, pVtx[pIdx[nCntPolygon + 2]].nor.z);*/
 				//pVtx[pIdx[nCntPolygon]].col = D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f);
 				//pVtx[pIdx[nCntPolygon + 1]].col = D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f);
 				//pVtx[pIdx[nCntPolygon + 2]].col = D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f);
@@ -445,131 +448,6 @@ bool CMeshField::Collision(D3DXVECTOR3 *pos, float fRadius)
 	// 頂点バッファのアンロック
 	m_pVtxBuff->Unlock();
 
-
-	return bCollison;
-}
-
-bool CMeshField::ShadowCollision(D3DXVECTOR3 *pos, float fRadius)
-{
-	// 当たり判定
-	bool bCollison = false;
-
-	// 頂点情報の取得
-	VERTEX_3D *pVtx = NULL;
-
-	// 頂点バッファをロック
-	m_pVtxBuff->Lock(0, 0, (void**)&pVtx, 0);
-
-	// インデックスバッファをロック
-	WORD *pIdx;
-	m_pIdxBuff->Lock(0, 0, (void**)&pIdx, 0);
-
-	// ターゲット情報の宣言
-	D3DXVECTOR3 posTarget = *pos;
-
-	// 計算用変数
-	D3DXVECTOR3 aVtx[3] = { D3DXVECTOR3(0.0f,0.0f,0.0f) };
-	D3DXVECTOR3 aVecLine[3] = { D3DXVECTOR3(0.0f,0.0f,0.0f) };
-	D3DXVECTOR3 aVecPos[3] = { D3DXVECTOR3(0.0f,0.0f,0.0f) };
-	float fInnerProduct[3] = { 0.0f };
-
-	for (int nCntPolygon = 0; nCntPolygon < m_nPrimitive; nCntPolygon++)
-	{
-		for (int nCntVtx = 0; nCntVtx < 3; nCntVtx++)
-		{// 頂点座標の取得
-			aVtx[nCntVtx] = pVtx[pIdx[nCntPolygon + nCntVtx]].pos;
-			//ワールド座標にキャスト
-			//変数宣言
-			D3DXMATRIX        mtxWorldVtx;                //ワールドマトリックス
-			D3DXMATRIX        mtxRot, mtxTrans;           //計算用マトリックス
-
-														  //ワールドマトリックスの初期化
-														  //行列初期化関数(第一引数の[行列]を[単位行列]に初期化)
-			D3DXMatrixIdentity(&mtxWorldVtx);
-
-			//位置を反映
-			//行列移動関数 (第一引数にX,Y,Z方向の移動行列を作成)
-			D3DXMatrixTranslation(&mtxTrans, aVtx[nCntVtx].x, aVtx[nCntVtx].y, aVtx[nCntVtx].z);
-			D3DXMatrixMultiply(&mtxWorldVtx, &mtxWorldVtx, &mtxTrans);        //行列掛け算関数
-
-																			  //向きの反映
-																			  //行列回転関数 (第一引数に[ヨー(y)ピッチ(x)ロール(z)]方向の回転行列を作成)
-			D3DXMatrixRotationYawPitchRoll(&mtxRot, m_rot.y, m_rot.x, m_rot.z);
-
-			//行列掛け算関数 (第二引数 * 第三引数を第一引数に格納)
-			D3DXMatrixMultiply(&mtxWorldVtx, &mtxWorldVtx, &mtxRot);
-
-			//位置を反映
-			//行列移動関数 (第一引数にX,Y,Z方向の移動行列を作成)
-			D3DXMatrixTranslation(&mtxTrans, m_pos.x, m_pos.y, m_pos.z);
-			D3DXMatrixMultiply(&mtxWorldVtx, &mtxWorldVtx, &mtxTrans);        //行列掛け算関数
-
-			aVtx[nCntVtx] = D3DXVECTOR3(mtxWorldVtx._41, mtxWorldVtx._42, mtxWorldVtx._43);
-		}
-
-		if (aVtx[0] == aVtx[1]
-			|| aVtx[0] == aVtx[2]
-			|| aVtx[1] == aVtx[2])
-		{// 縮退ポリゴンを飛ばす
-			continue;
-		}
-
-		// ポリゴンの辺ベクトル
-		aVecLine[0] = aVtx[1] - aVtx[0];
-		aVecLine[1] = aVtx[2] - aVtx[1];
-		aVecLine[2] = aVtx[0] - aVtx[2];
-
-		for (int nCntVtx = 0; nCntVtx < 3; nCntVtx++)
-		{// 頂点とターゲットのベクトル
-			aVecPos[nCntVtx] = posTarget - aVtx[nCntVtx];
-
-			// 頂点とターゲットのベクトルとポリゴンの辺ベクトルの内積を算出
-			fInnerProduct[nCntVtx] = (aVecLine[nCntVtx].z * aVecPos[nCntVtx].x) - (aVecLine[nCntVtx].x * aVecPos[nCntVtx].z);
-		}
-
-		if ((0.0f <= fInnerProduct[0]
-			&& 0.0f <= fInnerProduct[1]
-			&& 0.0f <= fInnerProduct[2])
-			|| (0.0f >= fInnerProduct[0]
-				&& 0.0f >= fInnerProduct[1]
-				&& 0.0f >= fInnerProduct[2]))
-		{
-			// 面法線ベクトル
-			D3DXVECTOR3 norVec = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
-
-			// 面法線ベクトル
-			D3DXVec3Cross(&norVec, &aVecLine[0], &aVecLine[1]);
-
-			// 面法線ベクトルの正規化
-			D3DXVec3Normalize(&norVec, &norVec);
-
-			// 高さの交差点の算出
-			float fIntersection = aVtx[0].y - ((posTarget.x - aVtx[0].x) * norVec.x + (posTarget.z - aVtx[0].z) * norVec.z) / norVec.y;
-
-			if (fIntersection >= posTarget.y && fIntersection <= posTarget.y + fRadius)
-			{// 位置の設定
-				//pos->y = fIntersection;
-
-				// 判定の設定
-				bCollison = true;
-#ifdef _DEBUG
-				//デバック表示
-				pVtx[pIdx[nCntPolygon]].col = D3DXCOLOR(1.0f, 0.0f, 0.0f, 1.0f);
-				pVtx[pIdx[nCntPolygon + 1]].col = D3DXCOLOR(0.0f, 1.0f, 0.0f, 1.0f);
-				pVtx[pIdx[nCntPolygon + 2]].col = D3DXCOLOR(0.0f, 0.0f, 1.0f, 1.0f);
-#endif // _DEBUG
-
-				break;
-			}
-		}
-	}
-
-	// インデックスバッファのアンロック
-	m_pIdxBuff->Unlock();
-
-	// 頂点バッファのアンロック
-	m_pVtxBuff->Unlock();
-
-
+	//判定を返す
 	return bCollison;
 }

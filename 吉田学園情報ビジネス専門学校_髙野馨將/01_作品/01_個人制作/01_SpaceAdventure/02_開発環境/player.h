@@ -47,6 +47,7 @@ public:
 	void Input(void);												//入力
 	void CollisionObj(void);										//オブジェクトと当たった時の処理
 	void CollisionStage(void);										//ステージの当たり判定
+	void CollisionGimmick(void);									//影とギミックの当たり判定
 	void Attack(void);												//攻撃処理
 	void BuffPlayer(void);											//プレイヤーの強化処理
 
@@ -74,6 +75,7 @@ private:
 	//静的メンバ変数
 	static float m_fAcceleration;				//加速係数
 	static float m_fJump;						//ジャンプ力
+	static int m_nGoalCnt;						//ゴールからフェード迄の時間
 
 	//メンバ変数
 	CModel *m_apModel[MAX_MODEL];				//モデルの情報
@@ -91,7 +93,6 @@ private:
 	D3DXVECTOR3 m_move;							//移動量
 	D3DXVECTOR3 m_vecAxis;						//軸ベクトル
 	D3DXVECTOR3 m_norVec;						//法線ベクトル
-	D3DXVECTOR3 shadowPos;
 	D3DXMATRIX m_mtxWorld;						//ワールドマトリックス
 	D3DXMATRIX m_mtxQuat;						//クォータニオン
 	PLAYER_TYPE m_type;							//プレイヤーの種類

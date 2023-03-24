@@ -9,6 +9,8 @@
 #include "meshfield.h"
 #include "input.h"
 #include "stage.h"
+#include "game.h"
+#include "player.h"
 #include <assert.h>
 
 //======================================================
@@ -34,12 +36,14 @@ HRESULT CObjectX::Init(void)
 {
 	//初期化
 	m_bModel = false;
+	m_bCollision = false;
 	m_rotation = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	m_pos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	m_size = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	m_move = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	m_Min = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 	m_Max = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
+	m_ShadowPos = D3DXVECTOR3(0.0f, 0.0f, 0.0f);
 
 	return S_OK;
 }
@@ -91,6 +95,8 @@ void CObjectX::Draw(void)
 {
 	//デバイスの取得
 	LPDIRECT3DDEVICE9 pDevice = CApplication::GetRenderer()->GetDevice();
+	CPlayer *pPlayer = CGame::GetPlayer();
+
 	//計算用マトリックス
 	D3DXMATRIX mtxRot, mtxTrans;	
 	//現在のマテリアル保存用
@@ -111,13 +117,15 @@ void CObjectX::Draw(void)
 
 	//メッシュの情報取得
 	std::vector<CMeshField*> pMesh = CStage::GetMesh();
-
 	for (int nCnt = 0; nCnt < CStage::m_nMaxMesh; nCnt++)
 	{
-		if (m_pos.y >= pMesh[nCnt]->GetPos().y)
+		if (pPlayer != nullptr)
 		{
-			//平面投影
-			Shadow();
+			if (m_pos.y >= pMesh[nCnt]->GetPos().y && !pPlayer->GetInside())
+			{
+				//平面投影
+				Shadow();
+			}
 		}
 	}
 	//ワールドマトリックスの設定
@@ -207,22 +215,27 @@ void CObjectX::Shadow(void)
 	//平面
 	D3DXPLANE planeField;
 	//情報
-	D3DXVECTOR3 pos, normal;
+	D3DXVECTOR3 ShadowPos, normal;
 	DWORD ambient;
 
 	//ワールドマトリックスの初期化
 	D3DXMatrixIdentity(&mtxShadow);
-	pos = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
 	normal = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
 
 	//法線と平面の一点から平面を作成
-	D3DXPlaneFromPointNormal(&planeField, &pos, &normal);
+	m_bCollision = CollisionMesh(m_pos, m_size);					//メッシュフィールドの上にモデルがあるならtrue
+	D3DXPlaneFromPointNormal(&planeField, &m_ShadowPos, &normal);
+
 	//ライトと平面から影行列
 	D3DXMatrixShadow(&mtxShadow, &vecLight, &planeField);
 	//ワールドマトリックスを掛け合わせて設定
 	D3DXMatrixMultiply(&mtxShadow, &m_mtxWorld, &mtxShadow);
 	//シャドウマトリックスの設定
 	pDevice->SetTransform(D3DTS_WORLD, &mtxShadow);
+	//行列の影の位置を変換する
+	D3DXVec3TransformCoord(&ShadowPos, &D3DXVECTOR3(0.0f, 0.0f, 0.0f), &mtxShadow);
+
+	bool bCollision = CollisionMesh(ShadowPos, m_size);
 	//現在のマテリアルを保持
 	pDevice->GetMaterial(&matDef);
 	//マテリアルのポインタを取得
@@ -239,8 +252,11 @@ void CObjectX::Shadow(void)
 		//マテリアルの設定
 		pDevice->SetRenderState(D3DRS_AMBIENT, 0xff000000);	//カラー
 		pDevice->SetMaterial(&pMatD3D);
-		//影の描画
-		m_MeshModel->DrawSubset(nCntMat);
+		if (m_bCollision && bCollision)
+		{
+			//影の描画
+			m_MeshModel->DrawSubset(nCntMat);
+		}
 	}
 	//保持していたマテリアルを元に戻す
 	pDevice->SetMaterial(&matDef);
@@ -266,6 +282,31 @@ CObjectX *CObjectX::Create(const D3DXVECTOR3 &pos, int nPriority)
 	}
 
 	return pObjectX;
+}
+
+//======================================================
+//当たり判定
+//======================================================
+bool CObjectX::CollisionMesh(const D3DXVECTOR3 pos, const D3DXVECTOR3 size)
+{
+	//動的配列
+	std::vector<CMeshField*> pMesh = CStage::GetMesh();
+	for (int nCnt = 0; nCnt < CStage::m_nMaxMesh; nCnt++)
+	{
+		if (pMesh[nCnt]->GetPos().x - (pMesh[nCnt]->GetSize().x) <= pos.x + size.x
+			&& pMesh[nCnt]->GetPos().x + (pMesh[nCnt]->GetSize().x * pMesh[nCnt]->GetBlock().x) >= pos.x - size.x
+			&& pMesh[nCnt]->GetPos().z - (pMesh[nCnt]->GetSize().z * pMesh[nCnt]->GetBlock().y) <= pos.z + size.z
+			&& pMesh[nCnt]->GetPos().z + (pMesh[nCnt]->GetSize().z) >= pos.z - size.z
+			&& pMesh[nCnt]->GetPos().y - pMesh[nCnt]->GetSize().y <= pos.y + (size.y * 2.0f))
+		{
+			//影の位置の設置
+			m_ShadowPos = D3DXVECTOR3(pos.x, pMesh[nCnt]->GetPos().y + 1.0f,pos.z);
+
+			return true;
+		}
+	}
+
+	return false;
 }
 
 //======================================================

@@ -241,6 +241,7 @@ void CGimmick::Fall(void)
 		pCamera->ShakeCamera(1, 1.0f);
 	}
 }
+
 //======================================================
 //プレイヤーの押し出し処理
 //======================================================
@@ -331,6 +332,24 @@ bool CGimmick::PushPlayer(void)
 
 		}
 	}
+	return false;
+}
+
+//======================================================
+//プレイヤーの押し出し処理
+//======================================================
+bool CGimmick::Collision(D3DXVECTOR3 pos)
+{
+	D3DXVECTOR3 GimmickPos = GetPos();
+	D3DXVECTOR3 GimmickSize = GetSize() / 2.0f;
+
+	//ブロックの範囲内に入ったら
+	if (GimmickPos.x - GimmickSize.x <= pos.x && GimmickPos.x + GimmickSize.x >= pos.x
+		&& GimmickPos.z - GimmickSize.z <= pos.z && GimmickPos.z + GimmickSize.z >= pos.z)
+	{
+		return true;
+	}
+
 	return false;
 }
 

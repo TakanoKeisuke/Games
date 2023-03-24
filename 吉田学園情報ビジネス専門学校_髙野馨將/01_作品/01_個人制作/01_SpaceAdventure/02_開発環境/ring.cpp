@@ -84,25 +84,19 @@ void CRing::Draw(void)
 CRing *CRing::Create(D3DXVECTOR3 pos, D3DXVECTOR3 size, D3DXVECTOR3 rot)
 {
 	//インスタンスを生成する
-	CRing *pSphere = new CRing;
+	CRing *pRing = new CRing;
 
-	if (pSphere != nullptr)
+	if (pRing != nullptr)
 	{
 		//設定処理
-		pSphere->Init();
-		pSphere->SetSize(size);
-		pSphere->SetPos(pos);
-		pSphere->SetRot(rot);
-
-		//横回転
-		/*D3DXVECTOR3 rotation = D3DXVECTOR3(0.0f, 1.0f, 0.0f);
-		D3DXVec3Normalize(&rotation, &rotation);
-		rotation.y *= 0.03f;
-		pSphere->SetRotation(rotation);*/
+		pRing->Init();
+		pRing->SetSize(size);
+		pRing->SetPos(pos);
+		pRing->SetRot(rot);
 
 		//当たり判定
-		pSphere->m_pHitbox = CSphereHitbox::Create(pos, D3DXVECTOR3(0.0f, 0.0f, 0.0f), size, CHitbox::TYPE_OBSTACLE, 0, pSphere, CHitbox::EFFECT_FLY);
+		pRing->m_pHitbox = CSphereHitbox::Create(pos, D3DXVECTOR3(0.0f, 0.0f, 0.0f), size, CHitbox::TYPE_OBSTACLE, 0, pRing, CHitbox::EFFECT_FLY);
 	}
 
-	return pSphere;
+	return pRing;
 }
